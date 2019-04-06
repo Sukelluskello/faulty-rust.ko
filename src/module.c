@@ -444,6 +444,6 @@ static void non_reachable_function(void)
 
 module_init(mod_init);
 module_exit(mod_exit);
-MODULE_LICENSE("MIT");
+MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("A Kernel Module with Faults, Rust version");
 MODULE_AUTHOR("Ilja Sidoroff, Based on the work of Taesoo Kim");
