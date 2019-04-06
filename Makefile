@@ -51,6 +51,7 @@ rmmod:
 
 clean:
 	rm -rf "${BUILD_DIRECTORY}"
+	rm "${KERNEL_MODULE}.ko"
 	$(CARGO) clean
 
 test: ${KERNEL_MODULE}.ko
