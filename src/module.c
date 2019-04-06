@@ -30,3 +30,5 @@ module_init(hello_init);
 module_exit(hello_exit);
 
 MODULE_LICENSE("MIT");
+MODULE_DESCRIPTION("An attempt to port faulty C into Rust");
+MODULE_AUTHOR("Ilja Sidoroff, Based on the Work of Taesoo Kim");
