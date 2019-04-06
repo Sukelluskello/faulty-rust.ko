@@ -1,5 +1,5 @@
 [package]
-name    = "hello"
+name    = "rfaulty"
 version = "0.1.0"
 
 [lib]

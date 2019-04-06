@@ -1,7 +1,7 @@
 # Path to the kbuild Makefile of the kernel to compile against
 export KERNEL_BUILD_PATH := /lib/modules/$(shell uname -r)/build
 # Name of this kernel module
-export KERNEL_MODULE     := hello
+export KERNEL_MODULE     := rfaulty
 # List of kernel headers to include (e.g.: "linux/netdevice.h")
 export KERNEL_INCLUDE    := 
 # Path to the directory where kernel build artifacts should be stored
