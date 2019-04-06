@@ -65,6 +65,16 @@ Vagrant.configure("2") do |config|
   # documentation for more information about their specific syntax and use.
   config.vm.provision "shell", inline: <<-SHELL
      apt-get update
-     apt-get install -y linux-headers-`uname -r` make
+     apt-get install -y linux-headers-`uname -r` make curl gcc
+  SHELL
+
+  config.vm.provision "shell", privileged: false, inline: <<-SHELL
+     curl https://sh.rustup.rs -sSf > rustup-init.sh
+     chmod +x rustup-init.sh
+     ./rustup-init.sh -y --default-toolchain nightly
+     source ~/.cargo/env
+     cargo install xargo
+     sudo ln -s ~/.cargo/bin/xargo /usr/bin/xargo
+     rustup component add rust-src
   SHELL
 end
