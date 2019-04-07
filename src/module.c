@@ -21,7 +21,8 @@ void abort(void)
 
 extern ssize_t rust_format_read(struct file *fps, char *buf, size_t len,
 				loff_t *offset);
-extern void rust_format_write(void);
+extern ssize_t rust_format_write(struct file *fps, const char __user *buf,
+				size_t len, loff_t *offset);
 
 #define BUF_SIZE 256
 
@@ -36,7 +37,6 @@ static ssize_t slab_write(struct file *fps, const char __user *buf, size_t len, 
 static void slab_operate_with_other_data(void);
 static ssize_t unsigned_overflow_read(struct file *fps, char __user *buf, size_t len, loff_t *offset);
 static ssize_t signed_underflow_read(struct file *fps, char __user *buf, size_t len, loff_t *offset);
-static ssize_t format_write(struct file *fps, const char __user *buf, size_t len, loff_t *offset);
 static ssize_t race_read(struct file *fps, char __user *buf, size_t len, loff_t *offset);
 static ssize_t race_write(struct file *fps, const char __user *buf, size_t len, loff_t *offset);
 static ssize_t df_alloc(struct file *fps, char __user *buf, size_t len, loff_t *offset);
@@ -92,7 +92,7 @@ static const struct file_operations fops_format = {
 	.owner = THIS_MODULE,
 	.open = simple_open,
 	.read = rust_format_read,
-	.write = format_write,
+	.write = rust_format_write,
 };
 
 // data race
@@ -350,7 +350,7 @@ static ssize_t signed_underflow_read(struct file *fps, char __user *buf, size_t 
 	kfree(buffer);
 	return n;
 }
-
+/*
 static ssize_t format_write(struct file *fps, const char __user *buf,
 			size_t len, loff_t *offset)
 {
@@ -366,7 +366,7 @@ static ssize_t format_write(struct file *fps, const char __user *buf,
 	printk(buffer);
 	return n;
 }
-
+*/
 static ssize_t race_read(struct file *fps, char __user *buf, size_t len,
 			loff_t *offset)
 {

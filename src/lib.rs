@@ -8,4 +8,6 @@ extern crate linux_std as std;
 mod lang;
 mod format;
 
+const BUF_SIZE: usize = 256;
+
 
