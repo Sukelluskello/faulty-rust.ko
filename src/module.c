@@ -19,7 +19,6 @@ void abort(void)
     BUG();
 }
 
-extern void rust_main(void);
 extern ssize_t rust_format_string_read(const char *buf, size_t len,
 				loff_t *offset);
 extern void rust_format_string_write(void);
@@ -89,9 +88,6 @@ static const struct file_operations fops_underflow = {
 	.open = simple_open,
 	.read = signed_underflow_read,
 };
-
-// format string bug
-static char *some_string = "A write to this endpoint will get copied to kernel message buffer\n";
 
 static const struct file_operations fops_format = {
 	.owner = THIS_MODULE,
@@ -206,7 +202,6 @@ static int __init mod_init(void)
 
 end:
 	pr_debug("Rust-Faulty: module loaded\n");
-	rust_main();
 	return 0;
 
 }

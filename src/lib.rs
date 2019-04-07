@@ -8,8 +8,4 @@ extern crate linux_std as std;
 mod lang;
 mod format;
 
-#[no_mangle]
-pub fn rust_main() {
-    println!("Hello from Rust!++");
-}
 
