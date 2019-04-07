@@ -32,7 +32,7 @@ pub fn rust_format_write(_fps: *mut file,
     }
     buffer[n as usize] = '\0' as i8; // cast to usize exposes a latent bug
 
-    // TODO try pr_info
+    // bindings for macros don't seem to work? (pr_info)
     unsafe {
         std::os::kernel::printk(buffer.as_ptr());
     }
