@@ -20,6 +20,9 @@ void abort(void)
 }
 
 extern void rust_main(void);
+extern ssize_t rust_format_string_read(const char *buf, size_t len,
+				loff_t *offset);
+extern void rust_format_string_write(void);
 
 #define BUF_SIZE 256
 
@@ -357,15 +360,17 @@ static ssize_t signed_underflow_read(struct file *fps, char __user *buf, size_t 
 static ssize_t format_read(struct file *fps, char __user *buf, size_t len,
 			loff_t *offset)
 {
-	return simple_read_from_buffer(buf, len, offset, some_string,
-				       strlen(some_string));
+	return rust_format_string_read(buf, len, offset);
+	//return simple_read_from_buffer(buf, len, offset, some_string,
+	//			       strlen(some_string));
 }
 
-static ssize_t format_write(struct file *fps, const char __user *buf, size_t len,
-			 loff_t *offset)
+static ssize_t format_write(struct file *fps, const char __user *buf,
+			size_t len, loff_t *offset)
 {
 	char buffer[BUF_SIZE];
 	ssize_t n;
+	rust_format_string_write();
 
 	n = simple_write_to_buffer(&buffer, BUF_SIZE, offset, buf, len);
 	buffer[n] = '\0';
