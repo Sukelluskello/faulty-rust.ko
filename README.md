@@ -14,17 +14,19 @@ Rust as well. See https://github.com/isido/kernel-module-with-faults
 
 # Building
 
- 1. Install nightly Rust:
+ 1. Install the prerequisites (Debian/Ubuntu [1])
+```
+$ sudo apt install -y linux-headers-`uname r` make curl gcc libclang-dev
+```
+
+ 2. Install the nightly Rust [2]:
 ```
 $ rustup install nightly
 $ rustup default nightly
 ```
- 2. Install xargo and rust-src
+ 3. Install xargo and rust-src
 ```
-$ cargo install xargo
-```
- 3. Optionally symlink it
-```
+$ cargo install xargo and rust-src
 $ sudo ln -s ~/.cargo/bin/xargo /usr/bin/xargo
 $ rustup component add rust-src
 ```
@@ -34,3 +36,19 @@ $ make
 $ sudo insmod rfaulty.ko
 ```
 
+# Building with Vagrant
+
+If you have Virtualbox [3] and Vagrant you can just
+```
+$ vagrant up
+$ vagrant ssh
+$ cd /vagrant
+$ make
+$ sudo insmod rfaulty.ko
+```
+
+[1] I got this working only on Ubuntu 18.10 (Cosmic), Debian 9 (Stretch) didn't work. Buster pre-release also had some problems.
+
+[2] Tested on versions 1.35.0-nightly (f69422288 2019-04-01) and rustc 1.35.0-nightly (3750348da 2019-04-08)
+
+[3] Unfortunately, the Ubuntu 18.10 box is provided only for Virtualbox, not for Libvirt.
