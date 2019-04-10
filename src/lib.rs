@@ -4,10 +4,13 @@
 #[macro_use]
 extern crate linux_std as std;
 
-// Defines various language items that need to be around
-mod lang;
 mod format;
+mod lang;
+mod stack;
 
 const BUF_SIZE: usize = 256;
 
 
+fn non_reachable_function() {
+    println!("This function should not be reached!\n");
+}

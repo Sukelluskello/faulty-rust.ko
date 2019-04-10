@@ -24,14 +24,19 @@ extern ssize_t rust_format_read(struct file *fps, char *buf, size_t len,
 extern ssize_t rust_format_write(struct file *fps, const char __user *buf,
 				size_t len, loff_t *offset);
 
+extern ssize_t rust_stack_read(struct file *fps, char *buf, size_t len,
+				loff_t *offset);
+extern ssize_t rust_stack_write(struct file *fps, const char __user *buf,
+				size_t len, loff_t *offset);
+
+
+
 #define BUF_SIZE 256
 
 static struct dentry *dir;
 static const char *root = "rfaulty";
 
 static int init_endpoint(struct dentry *dir, const char *fn, const struct file_operations *fops);
-static ssize_t sbo_read(struct file *fps, __user char *buf, size_t len, loff_t *offset);
-static ssize_t sbo_write(struct file *fps, const char __user *buf, size_t len, loff_t *offset);
 static ssize_t slab_read(struct file *fps, char __user *buf, size_t len, loff_t *offset);
 static ssize_t slab_write(struct file *fps, const char __user *buf, size_t len, loff_t *offset);
 static void slab_operate_with_other_data(void);
@@ -45,14 +50,13 @@ static ssize_t use_after_free_read(struct file *fps, char __user *buf, size_t le
 static ssize_t infoleak_read(struct file *fps, char __user *buf, size_t len, loff_t *offset);
 static void non_reachable_function(void);
 
-// stack buffer overflow
 static char *buffer = "just some small data buffer\n";
 
 static const struct file_operations fops_sbo = {
 	.owner = THIS_MODULE,
 	.open = simple_open,
-	.read = sbo_read,
-	.write = sbo_write,
+	.read = rust_stack_read,
+	.write = rust_stack_write,
 };
 
 // slab corruption
@@ -226,39 +230,6 @@ static int init_endpoint(struct dentry *dir, const char *fn, const struct file_o
 
 	return 0;
 }
-
-static ssize_t sbo_read(struct file *fps, char __user *buf, size_t len,
-			loff_t *offset)
-{
-	return simple_read_from_buffer(buf, len, offset, buffer,
-				       strlen(buffer));
-}
-
-static ssize_t sbo_write(struct file *fps, const char __user *buf, size_t len,
-			 loff_t *offset)
-{
-	int kbuf_size = 10;
-	int flag = 0; // variable to clobber
-	char kbuf[kbuf_size];
-	int bytes_written = 0;
-
-	// FAULT: stack buffer overflow
-	// length of the incoming data is used instead of
-	// target buffer length (kbuf_size)
-	bytes_written = simple_write_to_buffer(kbuf, len, offset,
-					       buf, len);
-
-	// TODO: another fault here?
-	//strncpy(buffer, kbuf, len);
-
-	// we'll bypass stack canary evasion at this time
-	if (flag != 0) {
-		non_reachable_function();
-	}
-
-	return bytes_written;
-}
-
 
 static ssize_t slab_read(struct file *fps, char __user *buf, size_t len,
 			loff_t *offset)
