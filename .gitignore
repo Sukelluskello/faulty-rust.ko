@@ -5,3 +5,4 @@ config.mk
 *.ko
 *~
 .vagrant/*
+Cargo.lock
