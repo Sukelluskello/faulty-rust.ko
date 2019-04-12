@@ -25,10 +25,14 @@ extern ssize_t rust_format_write(struct file *fps, const char __user *buf,
 				size_t len, loff_t *offset);
 
 extern ssize_t rust_stack_read(struct file *fps, char *buf, size_t len,
-				loff_t *offset);
+			loff_t *offset);
 extern ssize_t rust_stack_write(struct file *fps, const char __user *buf,
-				size_t len, loff_t *offset);
+			       size_t len, loff_t *offset);
 
+extern ssize_t rust_slab_read(struct file *fps, char *buf, size_t len,
+			loff_t *offset);
+extern ssize_t rust_slab_write(struct file *fps, const char __user *buf,
+			size_t len, loff_t *offset);
 
 
 #define BUF_SIZE 256
@@ -37,9 +41,6 @@ static struct dentry *dir;
 static const char *root = "rfaulty";
 
 static int init_endpoint(struct dentry *dir, const char *fn, const struct file_operations *fops);
-static ssize_t slab_read(struct file *fps, char __user *buf, size_t len, loff_t *offset);
-static ssize_t slab_write(struct file *fps, const char __user *buf, size_t len, loff_t *offset);
-static void slab_operate_with_other_data(void);
 static ssize_t unsigned_overflow_read(struct file *fps, char __user *buf, size_t len, loff_t *offset);
 static ssize_t signed_underflow_read(struct file *fps, char __user *buf, size_t len, loff_t *offset);
 static ssize_t race_read(struct file *fps, char __user *buf, size_t len, loff_t *offset);
@@ -63,18 +64,9 @@ static const struct file_operations fops_sbo = {
 static const struct file_operations fops_slab = {
 	.owner = THIS_MODULE,
 	.open = simple_open,
-	.read = slab_read,
-	.write = slab_write,
+	.read = rust_slab_read,
+	.write = rust_slab_write,
 };
-
-struct some_data {
-	char data[10];
-	bool flag_which_is_never_set;
-};
-
-static struct some_data *user_controlled;
-static struct some_data *other_data;
-static bool toggle;
 
 // under/overflow
 static u8 unsigned_counter = 250;
@@ -229,59 +221,6 @@ static int init_endpoint(struct dentry *dir, const char *fn, const struct file_o
 	}
 
 	return 0;
-}
-
-static ssize_t slab_read(struct file *fps, char __user *buf, size_t len,
-			loff_t *offset)
-{
-	slab_operate_with_other_data();
-
-	if (!user_controlled) {
-		pr_debug("Rust-Faulty: Slab - Read, no data\n");
-		return 0;
-	}
-
-	pr_info("Rust-Faulty: Slab - Read, there is data\n");
-	return simple_read_from_buffer(buf, len, offset,
-				user_controlled->data, strlen(user_controlled->data));
-
-}
-
-static ssize_t slab_write(struct file *fps, const char __user *buf, size_t len,
-			 loff_t *offset)
-{
-	slab_operate_with_other_data();
-
-	if (!user_controlled) {
-		pr_debug("Rust-Faulty: Slab - Write, No data\n");
-	} else {
-		pr_debug("Rust-Faulty: Slab - Write, Free old data\n");
-		kfree(user_controlled);
-	}
-	user_controlled = kmalloc(sizeof(struct some_data), GFP_KERNEL);
-
-	// TODO test conditions
-	if (other_data->flag_which_is_never_set)
-		non_reachable_function();
-
-	// FAULT: heap buffer overflow
-	return simple_write_to_buffer(user_controlled->data, len, offset,
-				buf, len);
-
-}
-
-// TODO: make this double freeable
-static void slab_operate_with_other_data(void)
-{
-	if (!toggle) {
-		toggle = true;
-		pr_debug("Rust-Faulty: Slab - allocating other data");
-		other_data = kzalloc(sizeof(struct some_data), GFP_KERNEL);
-	} else {
-		pr_debug("Rust-Faulty: Slab - freeing other data");
-		kfree(other_data);
-		toggle = false;
-    }
 }
 
 static ssize_t unsigned_overflow_read(struct file *fps, char __user *buf, size_t len,
