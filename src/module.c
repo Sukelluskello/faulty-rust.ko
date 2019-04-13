@@ -26,10 +26,7 @@ static struct dentry *dir;
 static const char *root = "rfaulty";
 
 static int init_endpoint(struct dentry *dir, const char *fn, const struct file_operations *fops);
-static ssize_t use_after_free_read(struct file *fps, char __user *buf, size_t len, loff_t *offset);
 static ssize_t infoleak_read(struct file *fps, char __user *buf, size_t len, loff_t *offset);
-
-static char *buffer = "just some small data buffer\n";
 
 static const struct file_operations fops_sbo = {
 	.owner = THIS_MODULE,
@@ -83,7 +80,7 @@ static const struct file_operations fops_double_free = {
 static const struct file_operations fops_use_after_free = {
 	.owner = THIS_MODULE,
 	.open = simple_open,
-	.read = use_after_free_read,
+	.read = rust_use_after_free_read,
 };
 
 static const struct file_operations fops_infoleak = {
@@ -177,16 +174,6 @@ static int init_endpoint(struct dentry *dir, const char *fn, const struct file_o
 	}
 
 	return 0;
-}
-
-static ssize_t use_after_free_read(struct file *fps, char __user *buf, size_t len, loff_t *offset)
-{
-	char *tmp = kmalloc(len, GFP_KERNEL);
-	strncpy(tmp, buffer, len);
-	// FAULT: use after free
-	kfree(tmp);
-	copy_to_user(buf, tmp, len);
-	return len;
 }
 
 static ssize_t infoleak_read(struct file *fps, char __user *buf, size_t len, loff_t *offset)

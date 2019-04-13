@@ -15,7 +15,7 @@ mod overflow;
 mod race;
 mod slab;
 mod stack;
-
+mod use_after_free;
 
 //
 // Redefinitions of Kernel constants
