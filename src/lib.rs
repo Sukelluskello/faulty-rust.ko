@@ -8,6 +8,7 @@ use std::os::kernel::__kmalloc;
 use std::os::raw::c_void;
 use std::os::kernel::gfp_t;
 
+mod double_free;
 mod format;
 mod lang;
 mod overflow;

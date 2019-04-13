@@ -67,10 +67,6 @@ static const struct file_operations fops_format = {
 	.write = rust_format_write,
 };
 
-// data race
-static char *race1;
-static char *race2;
-
 static const struct file_operations fops_race = {
 	.owner = THIS_MODULE,
 	.open = simple_open,
@@ -170,8 +166,7 @@ end:
 static void __exit mod_exit(void)
 {
 	debugfs_remove_recursive(dir);
-	kfree(race1);
-	kfree(race2);
+	exit_race();
 	kfree(uninitialized);
 
 	pr_debug("Rust-Faulty: Unloaded faulty kernel module\n");
@@ -210,7 +205,6 @@ static ssize_t use_after_free_read(struct file *fps, char __user *buf, size_t le
 	copy_to_user(buf, tmp, len);
 	return len;
 }
-
 
 static ssize_t infoleak_read(struct file *fps, char __user *buf, size_t len, loff_t *offset)
 {
