@@ -20,7 +20,7 @@ pub fn rust_unsigned_overflow_read(_fps: *mut file,
         }
     }
 
-    let s = "Rust-Faulty: Overflow";
+    let s = "Rust-Faulty: Overflow"; // TODO format string with counter
 
     unsafe {
         write_to_buffer(s, buf, len, offset)
@@ -41,7 +41,7 @@ pub fn rust_signed_underflow_read(_fps: *mut file,
         }
     }
     
-    let s = "Rust-Faulty: Underflow";    
+    let s = "Rust-Faulty: Underflow"; // TODO format string with counter
 
     unsafe {
         write_to_buffer(s, buf, len, offset)
