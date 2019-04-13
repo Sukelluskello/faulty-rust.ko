@@ -6,3 +6,4 @@ config.mk
 *~
 .vagrant/*
 Cargo.lock
+ubuntu-cosmic-18.10-cloudimg-console.log
