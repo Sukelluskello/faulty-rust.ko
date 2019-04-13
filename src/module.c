@@ -26,7 +26,6 @@ static struct dentry *dir;
 static const char *root = "rfaulty";
 
 static int init_endpoint(struct dentry *dir, const char *fn, const struct file_operations *fops);
-static ssize_t signed_underflow_read(struct file *fps, char __user *buf, size_t len, loff_t *offset);
 static ssize_t race_read(struct file *fps, char __user *buf, size_t len, loff_t *offset);
 static ssize_t race_write(struct file *fps, const char __user *buf, size_t len, loff_t *offset);
 static ssize_t df_alloc(struct file *fps, char __user *buf, size_t len, loff_t *offset);
@@ -52,9 +51,6 @@ static const struct file_operations fops_slab = {
 	.write = rust_slab_write,
 };
 
-// under/overflow
-static s8 signed_counter = -124;
-
 static const struct file_operations fops_overflow = {
 	.owner = THIS_MODULE,
 	.open = simple_open,
@@ -64,7 +60,7 @@ static const struct file_operations fops_overflow = {
 static const struct file_operations fops_underflow = {
 	.owner = THIS_MODULE,
 	.open = simple_open,
-	.read = signed_underflow_read,
+	.read = rust_signed_underflow_read,
 };
 
 static const struct file_operations fops_format = {
@@ -204,25 +200,6 @@ static int init_endpoint(struct dentry *dir, const char *fn, const struct file_o
 	}
 
 	return 0;
-}
-
-static ssize_t signed_underflow_read(struct file *fps, char __user *buf,
-				     size_t len, loff_t *offset)
-{
-	char *buffer = kmalloc(BUF_SIZE, GFP_KERNEL);
-	ssize_t n = 0;
-
-	// FAULT: signed underflow
-	snprintf(buffer, BUF_SIZE, "Rust-Faulty: Underflow - Counter value :%d\n",
-		signed_counter--); // note the behaviour of counter
-
-	if (signed_counter == 126)
-		non_reachable_function();
-
-	n =  simple_read_from_buffer(buf, len, offset, buffer,
-				       strlen(buffer));
-	kfree(buffer);
-	return n;
 }
 
 static ssize_t race_read(struct file *fps, char __user *buf, size_t len,

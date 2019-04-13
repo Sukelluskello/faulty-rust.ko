@@ -10,6 +10,7 @@ use std::os::kernel::gfp_t;
 
 mod format;
 mod lang;
+mod overflow;
 mod slab;
 mod stack;
 

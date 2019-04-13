@@ -1,4 +1,9 @@
-static mut UNSIGED_COUNTER: u8 = 250;
+use std::os::raw::c_char;
+use std::os::raw::c_void;
+use std::os::kernel::file;
+use std::os::kernel::loff_t;
+
+static mut UNSIGNED_COUNTER: u8 = 250;
 static mut SIGNED_COUNTER: i8 = -124;
 
 #[no_mangle]
@@ -6,52 +11,56 @@ pub fn rust_unsigned_overflow_read(_fps: *mut file,
                                    buf: *mut c_void,
                                    len: usize,
                                    offset: *mut loff_t) -> isize {
-
-    let s = std::format!("Rust-Faulty: Overflow - Counter value: {}",
-                         UNSIGNED_COUNTER);
-    let n;
-    
-    unsafe {
-        let ptr = ::kmalloc(s.len() + 1, GPF_KERNEL);
-        core::ptr::copy(s.as_ptr(), ptr as *mut u8, s.len());
-        core::ptr::write(ptr.offset(s.len() as isize), 0);
-
-        n = std::os::kernel::simple_read_from_buffer(buf, len, offset, ptr,
-                                                     std::os::kernel::strlen(ptr));
-        std::os::kernel::kfree(ptr);
-    }
         
     unsafe {
-        UNSIGNED_COUNTER =+1;
+        UNSIGNED_COUNTER +=1;
+
+        if UNSIGNED_COUNTER == 1 {
+            ::non_reachable_function();
+        }
     }
 
-    if UNSIGNED_COUNTER == 1 {
-        ::non_reachable_function();
-    }
+    let s = "Rust-Faulty: Overflow";
 
-    n       
+    unsafe {
+        write_to_buffer(s, buf, len, offset)
+    }
 }
 
+#[no_mangle]
 pub fn rust_signed_underflow_read(_fps: *mut file,
                         buf: *mut c_void,
                         len: usize,
                                   offset: *mut loff_t) -> isize {
-    0
+
+    unsafe {
+        SIGNED_COUNTER =-1;
+
+        if SIGNED_COUNTER == 126 {
+        ::non_reachable_function();
+        }
+    }
+    
+    let s = "Rust-Faulty: Underflow";    
+
+    unsafe {
+        write_to_buffer(s, buf, len, offset)
+    }
 }
 
-/*
-	char *buffer = kmalloc(BUF_SIZE, GFP_KERNEL);
-	ssize_t n = 0;
 
-	// FAULT: signed underflow
-	snprintf(buffer, BUF_SIZE, "Rust-Faulty: Underflow - Counter value :%d\n",
-		signed_counter--); // note the behaviour of counter
+unsafe fn write_to_buffer(s: &str,
+                          buf: *mut c_void,
+                          len: usize,
+                          offset: *mut loff_t) -> isize {
+    let ptr = ::kmalloc(s.len() + 1, ::GFP_KERNEL) as *mut c_char;
+    core::ptr::copy(s.as_ptr(), ptr as *mut u8, s.len());
+    core::ptr::write(ptr.offset(s.len() as isize), 0);
 
-	if (signed_counter == 126)
-		non_reachable_function();
+    let n = std::os::kernel::simple_read_from_buffer(buf, len, offset,
+                                                     ptr as *mut c_void,
+                                                     s.len() + 1);
+    std::os::kernel::kfree(ptr as *mut c_void);
 
-	n =  simple_read_from_buffer(buf, len, offset, buffer,
-				       strlen(buffer));
-	kfree(buffer);
-	return n;
-*/
+    n
+}
