@@ -10,6 +10,7 @@
 #include <linux/uaccess.h>
 #include <linux/slab.h>
 
+#include "rust-impl.h"
 
 char __morestack[1024];
 char _GLOBAL_OFFSET_TABLE_;
@@ -19,29 +20,12 @@ void abort(void)
     BUG();
 }
 
-extern ssize_t rust_format_read(struct file *fps, char *buf, size_t len,
-				loff_t *offset);
-extern ssize_t rust_format_write(struct file *fps, const char __user *buf,
-				size_t len, loff_t *offset);
-
-extern ssize_t rust_stack_read(struct file *fps, char *buf, size_t len,
-			loff_t *offset);
-extern ssize_t rust_stack_write(struct file *fps, const char __user *buf,
-			       size_t len, loff_t *offset);
-
-extern ssize_t rust_slab_read(struct file *fps, char *buf, size_t len,
-			loff_t *offset);
-extern ssize_t rust_slab_write(struct file *fps, const char __user *buf,
-			size_t len, loff_t *offset);
-
-
 #define BUF_SIZE 256
 
 static struct dentry *dir;
 static const char *root = "rfaulty";
 
 static int init_endpoint(struct dentry *dir, const char *fn, const struct file_operations *fops);
-static ssize_t unsigned_overflow_read(struct file *fps, char __user *buf, size_t len, loff_t *offset);
 static ssize_t signed_underflow_read(struct file *fps, char __user *buf, size_t len, loff_t *offset);
 static ssize_t race_read(struct file *fps, char __user *buf, size_t len, loff_t *offset);
 static ssize_t race_write(struct file *fps, const char __user *buf, size_t len, loff_t *offset);
@@ -69,13 +53,12 @@ static const struct file_operations fops_slab = {
 };
 
 // under/overflow
-static u8 unsigned_counter = 250;
 static s8 signed_counter = -124;
 
 static const struct file_operations fops_overflow = {
 	.owner = THIS_MODULE,
 	.open = simple_open,
-	.read = unsigned_overflow_read,
+	.read = rust_unsigned_overflow_read,
 };
 
 static const struct file_operations fops_underflow = {
@@ -223,27 +206,8 @@ static int init_endpoint(struct dentry *dir, const char *fn, const struct file_o
 	return 0;
 }
 
-static ssize_t unsigned_overflow_read(struct file *fps, char __user *buf, size_t len,
-			loff_t *offset)
-{
-	char *buffer = kmalloc(BUF_SIZE, GFP_KERNEL);
-	ssize_t n = 0;
-
-	// FAULT: unsigned overflow
-	snprintf(buffer, BUF_SIZE, "Rust-Faulty: Overflow - Counter value :%d\n",
-		unsigned_counter++); // note the behaviour of counter
-
-	if (unsigned_counter == 1)
-		non_reachable_function();
-
-	n =  simple_read_from_buffer(buf, len, offset, buffer,
-				       strlen(buffer));
-	kfree(buffer);
-	return n;
-}
-
-static ssize_t signed_underflow_read(struct file *fps, char __user *buf, size_t len,
-			loff_t *offset)
+static ssize_t signed_underflow_read(struct file *fps, char __user *buf,
+				     size_t len, loff_t *offset)
 {
 	char *buffer = kmalloc(BUF_SIZE, GFP_KERNEL);
 	ssize_t n = 0;
@@ -260,23 +224,7 @@ static ssize_t signed_underflow_read(struct file *fps, char __user *buf, size_t 
 	kfree(buffer);
 	return n;
 }
-/*
-static ssize_t format_write(struct file *fps, const char __user *buf,
-			size_t len, loff_t *offset)
-{
-	char buffer[BUF_SIZE];
-	ssize_t n;
-	rust_format_write();
 
-	n = simple_write_to_buffer(&buffer, BUF_SIZE, offset, buf, len);
-	buffer[n] = '\0';
-	pr_info("Rust-Faulty: %s\n", buffer);
-	// pr_info(buffer); // this would generate a compile-time error
-	// FAULT: format-string
-	printk(buffer);
-	return n;
-}
-*/
 static ssize_t race_read(struct file *fps, char __user *buf, size_t len,
 			loff_t *offset)
 {
