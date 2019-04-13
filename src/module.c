@@ -26,8 +26,6 @@ static struct dentry *dir;
 static const char *root = "rfaulty";
 
 static int init_endpoint(struct dentry *dir, const char *fn, const struct file_operations *fops);
-static ssize_t df_alloc(struct file *fps, char __user *buf, size_t len, loff_t *offset);
-static ssize_t df_free(struct file *fps, const char __user *buf, size_t len, loff_t *offset);
 static ssize_t use_after_free_read(struct file *fps, char __user *buf, size_t len, loff_t *offset);
 static ssize_t infoleak_read(struct file *fps, char __user *buf, size_t len, loff_t *offset);
 
@@ -74,14 +72,11 @@ static const struct file_operations fops_race = {
 	.write = rust_race_write,
 };
 
-// double free
-static char *double_free;
-
 static const struct file_operations fops_double_free = {
 	.owner = THIS_MODULE,
 	.open = simple_open,
-	.read = df_alloc,
-	.write = df_free,
+	.read = rust_df_alloc,
+	.write = rust_df_free,
 };
 
 // use after free
@@ -182,18 +177,6 @@ static int init_endpoint(struct dentry *dir, const char *fn, const struct file_o
 	}
 
 	return 0;
-}
-
-static ssize_t df_alloc(struct file *fps, char __user *buf, size_t len, loff_t *offset)
-{
-	double_free = kmalloc(len, GFP_KERNEL);
-	return len;
-}
-static ssize_t df_free(struct file *fps, const char __user *buf, size_t len, loff_t *offset)
-{
-	// FAULT: double free
-	kfree(double_free);
-	return len;
 }
 
 static ssize_t use_after_free_read(struct file *fps, char __user *buf, size_t len, loff_t *offset)

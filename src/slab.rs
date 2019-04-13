@@ -15,10 +15,12 @@ static mut USER_CONTROLLED: Option<*const c_void> = None;
 static mut OTHER_DATA: Option<*const c_void> = None;
 
 #[no_mangle]
-pub unsafe fn rust_slab_read(_fps: *mut file,
-                      buf: *mut c_void,
-                      len: usize,
-                       offset: *mut loff_t) -> isize {
+pub unsafe fn rust_slab_read(
+    _fps: *mut file,
+    buf: *mut c_void,
+    len: usize,
+    offset: *mut loff_t,
+) -> isize {
     operate_with_other_data();
     match USER_CONTROLLED {
         None => {
@@ -27,20 +29,25 @@ pub unsafe fn rust_slab_read(_fps: *mut file,
         },
         Some(p) => {
             println!("Rust-Faulty: Slab - Read, there is data\n");
-            std::os::kernel::simple_read_from_buffer(buf, len,
-                                                     offset,
-                                                     p as *const c_void,
-                                                     strlen(p as *const i8) as usize)
+            std::os::kernel::simple_read_from_buffer(
+                buf,
+                len,
+                offset,
+                p as *const c_void,
+                strlen(p as *const i8) as usize,
+            )
         }
     }
 }
 
                        
 #[no_mangle]
-pub unsafe fn rust_slab_write(_fps: *mut file,
-                       buf: *const c_void,
-                       len: usize,
-                       offset: *mut loff_t) -> isize {
+pub unsafe fn rust_slab_write(
+    _fps: *mut file,
+    buf: *const c_void,
+    len: usize,
+    offset: *mut loff_t,
+) -> isize {
     operate_with_other_data();
 
     match USER_CONTROLLED {
@@ -60,8 +67,13 @@ pub unsafe fn rust_slab_write(_fps: *mut file,
         ::non_reachable_function();
     }
 
-    std::os::kernel::simple_write_to_buffer(sd.data.as_mut_ptr() as *mut c_void, len,
-                                            offset, buf, len)
+    std::os::kernel::simple_write_to_buffer(
+        sd.data.as_mut_ptr() as *mut c_void,
+        len,
+        offset,
+        buf,
+        len,
+    )
     
 }
 

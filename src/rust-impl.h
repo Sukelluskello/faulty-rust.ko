@@ -30,3 +30,9 @@ extern ssize_t rust_race_write(struct file *fps, const char __user *buf,
 			size_t len, loff_t *offset);
 
 
+extern ssize_t rust_df_alloc(struct file *fps, char *buf,
+			size_t len, loff_t *offset);
+
+extern ssize_t rust_df_free(struct file *fps, const char __user *buf,
+			size_t len, loff_t *offset);
+
