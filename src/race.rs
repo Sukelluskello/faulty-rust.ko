@@ -7,13 +7,13 @@ static mut RACE1: *const c_void = core::ptr::null();
 static mut RACE2: *const c_void = core::ptr::null();
 
 #[no_mangle]
-pub unsafe fn init_race() {
+pub unsafe fn race_init() {
     RACE1 = ::kzalloc(::PAGE_SIZE, ::GFP_KERNEL);
     RACE2 = ::kzalloc(::PAGE_SIZE, ::GFP_KERNEL);
 }
 
 #[no_mangle]
-pub unsafe fn exit_race() {
+pub unsafe fn race_exit() {
     std::os::kernel::kfree(RACE1);
     std::os::kernel::kfree(RACE2);
 }

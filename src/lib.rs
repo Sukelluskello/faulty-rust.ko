@@ -10,6 +10,7 @@ use std::os::kernel::gfp_t;
 
 mod double_free;
 mod format;
+mod infoleak;
 mod lang;
 mod overflow;
 mod race;

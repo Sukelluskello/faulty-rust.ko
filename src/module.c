@@ -20,13 +20,10 @@ void abort(void)
     BUG();
 }
 
-#define BUF_SIZE 256
-
 static struct dentry *dir;
 static const char *root = "rfaulty";
 
 static int init_endpoint(struct dentry *dir, const char *fn, const struct file_operations *fops);
-static ssize_t infoleak_read(struct file *fps, char __user *buf, size_t len, loff_t *offset);
 
 static const struct file_operations fops_sbo = {
 	.owner = THIS_MODULE,
@@ -35,7 +32,6 @@ static const struct file_operations fops_sbo = {
 	.write = rust_stack_write,
 };
 
-// slab corruption
 static const struct file_operations fops_slab = {
 	.owner = THIS_MODULE,
 	.open = simple_open,
@@ -86,14 +82,8 @@ static const struct file_operations fops_use_after_free = {
 static const struct file_operations fops_infoleak = {
 	.owner = THIS_MODULE,
 	.open = simple_open,
-	.read = infoleak_read,
+	.read = rust_infoleak_read,
 };
-
-// FAULT: infoleak
-#define DATA_LEN 4096
-struct a_struct {
-	char data[DATA_LEN];
-} *uninitialized;
 
 static int __init mod_init(void)
 {
@@ -130,7 +120,7 @@ static int __init mod_init(void)
 		pr_debug("Rust-Faulty: Format string bug at debugfs '%s/format'\n", root);
 
 	if (!init_endpoint(dir, "data-race", &fops_race)) {
-		init_race();
+		race_init();
 		pr_debug("Rust-Faulty: Data race at debugfs '%s/data-race'\n", root);
 	}
 
@@ -140,16 +130,10 @@ static int __init mod_init(void)
 	if (!init_endpoint(dir, "use-after-free", &fops_use_after_free))
 		pr_debug("Rust-Faulty: Double free bug at debugfs '%s/use-after-free'\n", root);
 
-	uninitialized = kmalloc(sizeof (struct a_struct), GFP_KERNEL);
-	if (!uninitialized) {
-		pr_debug("Rust-Faulty: Infoleak - cannot allocate buffer\n");
-		goto end;
-	}
-
+	infoleak_init();
 	if (!init_endpoint(dir, "infoleak", &fops_infoleak))
 		pr_debug("Rust-Faulty: Infoleak at debugfs '%s/infoleak'\n", root);
 
-end:
 	pr_debug("Rust-Faulty: module loaded\n");
 	return 0;
 
@@ -158,8 +142,8 @@ end:
 static void __exit mod_exit(void)
 {
 	debugfs_remove_recursive(dir);
-	exit_race();
-	kfree(uninitialized);
+	race_exit();
+	infoleak_exit();
 
 	pr_debug("Rust-Faulty: Unloaded faulty kernel module\n");
 }
@@ -174,15 +158,6 @@ static int init_endpoint(struct dentry *dir, const char *fn, const struct file_o
 	}
 
 	return 0;
-}
-
-static ssize_t infoleak_read(struct file *fps, char __user *buf, size_t len, loff_t *offset)
-{
-
-	ssize_t l = len < DATA_LEN ? len : DATA_LEN;
-	return simple_read_from_buffer(buf, len, offset, uninitialized->data,
-				       l);
-
 }
 
 module_init(mod_init);
