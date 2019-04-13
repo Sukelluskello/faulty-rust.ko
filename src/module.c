@@ -26,13 +26,10 @@ static struct dentry *dir;
 static const char *root = "rfaulty";
 
 static int init_endpoint(struct dentry *dir, const char *fn, const struct file_operations *fops);
-static ssize_t race_read(struct file *fps, char __user *buf, size_t len, loff_t *offset);
-static ssize_t race_write(struct file *fps, const char __user *buf, size_t len, loff_t *offset);
 static ssize_t df_alloc(struct file *fps, char __user *buf, size_t len, loff_t *offset);
 static ssize_t df_free(struct file *fps, const char __user *buf, size_t len, loff_t *offset);
 static ssize_t use_after_free_read(struct file *fps, char __user *buf, size_t len, loff_t *offset);
 static ssize_t infoleak_read(struct file *fps, char __user *buf, size_t len, loff_t *offset);
-static void non_reachable_function(void);
 
 static char *buffer = "just some small data buffer\n";
 
@@ -77,8 +74,8 @@ static char *race2;
 static const struct file_operations fops_race = {
 	.owner = THIS_MODULE,
 	.open = simple_open,
-	.read = race_read,
-	.write = race_write,
+	.read = rust_race_read,
+	.write = rust_race_write,
 };
 
 // double free
@@ -145,18 +142,8 @@ static int __init mod_init(void)
 		pr_debug("Rust-Faulty: Format string bug at debugfs '%s/format'\n", root);
 
 	if (!init_endpoint(dir, "data-race", &fops_race)) {
-		race1 = kzalloc(PAGE_SIZE, GFP_KERNEL);
-		if (!race1) {
-			pr_debug("Rust-Faulty: Race - cannot allocate buffer 1\n");
-			goto end;
-		}
-		race2 = kzalloc(PAGE_SIZE, GFP_KERNEL);
-		if (!race2) {
-			pr_debug("Rust-Faulty: Race - cannot allocate buffer 2\n");
-			kfree(race1);
-			goto end;
-		}
-		pr_debug("Rust-Faulty: Format string bug at debugfs '%s/data-race'\n", root);
+		init_race();
+		pr_debug("Rust-Faulty: Data race at debugfs '%s/data-race'\n", root);
 	}
 
 	if (!init_endpoint(dir, "double-free", &fops_double_free))
@@ -202,35 +189,6 @@ static int init_endpoint(struct dentry *dir, const char *fn, const struct file_o
 	return 0;
 }
 
-static ssize_t race_read(struct file *fps, char __user *buf, size_t len,
-			loff_t *offset)
-{
-	if (strcmp(race1, race2)) {
-		non_reachable_function();
-	}
-	return simple_read_from_buffer(buf, len, offset, race1,
-				strlen(race1));
-}
-
-static ssize_t race_write(struct file *fps, const char __user *buf, size_t len,
-			 loff_t *offset)
-{
-	// FAULT: stack overflow
-	char buffer[PAGE_SIZE];
-	ssize_t n;
-
-	n = simple_write_to_buffer(&buffer, PAGE_SIZE, offset, buf, len);
-	buffer[n] = '\0';
-
-	// FAULT: race
-	// slow write is racy
-	memcpy(race1, buffer, len);
-	udelay(100);
-	memcpy(race2, buffer, len);
-
-	return n;
-}
-
 static ssize_t df_alloc(struct file *fps, char __user *buf, size_t len, loff_t *offset)
 {
 	double_free = kmalloc(len, GFP_KERNEL);
@@ -261,11 +219,6 @@ static ssize_t infoleak_read(struct file *fps, char __user *buf, size_t len, lof
 	return simple_read_from_buffer(buf, len, offset, uninitialized->data,
 				       l);
 
-}
-
-static void non_reachable_function(void)
-{
-	pr_info("Rust-Faulty: This function should not be reachable.\n");
 }
 
 module_init(mod_init);

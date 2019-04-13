@@ -3,7 +3,7 @@ export KERNEL_BUILD_PATH := /lib/modules/$(shell uname -r)/build
 # Name of this kernel module
 export KERNEL_MODULE     := rfaulty
 # List of kernel headers to include (e.g.: "linux/netdevice.h")
-export KERNEL_INCLUDE    := "linux/fs.h" "linux/slab.h"
+export KERNEL_INCLUDE    := "linux/delay.h" "linux/fs.h" "linux/slab.h"
 # Path to the directory where kernel build artifacts should be stored
 export BUILD_DIRECTORY   := build
 # List of C files to compile into this kernel module

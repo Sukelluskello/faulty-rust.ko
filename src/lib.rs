@@ -11,6 +11,7 @@ use std::os::kernel::gfp_t;
 mod format;
 mod lang;
 mod overflow;
+mod race;
 mod slab;
 mod stack;
 
@@ -35,6 +36,8 @@ const __GFP_IO: gfp_t = ___GFP_IO;
 const __GFP_FS: gfp_t = ___GFP_FS;
 const __GFP_ZERO: gfp_t = ___GFP_ZERO;
 const GFP_KERNEL: gfp_t = __GFP_RECLAIM | __GFP_IO | __GFP_FS;
+
+const PAGE_SIZE: usize = 4096;
 
 // Redefinitions of static inline functions
 //

@@ -19,3 +19,14 @@ extern ssize_t rust_unsigned_overflow_read(struct file *fps, char *buf,
 
 extern ssize_t rust_signed_underflow_read(struct file *fps, char *buf,
 					size_t len, loff_t *offset);
+
+extern void init_race(void);
+extern void exit_race(void);
+
+extern ssize_t rust_race_read(struct file *fps, char *buf,
+			size_t len, loff_t *offset);
+
+extern ssize_t rust_race_write(struct file *fps, const char __user *buf,
+			size_t len, loff_t *offset);
+
+
