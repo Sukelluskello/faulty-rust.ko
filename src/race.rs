@@ -60,7 +60,7 @@ pub fn rust_race_write(
             buffer.as_mut_ptr() as *mut c_void,
             len,
         );
-        std::os::kernel::__udelay(100); // TODO check why udelay binding was
+        std::os::kernel::__udelay(1000); // TODO check why udelay binding was
         // not generated?
         std::os::kernel::memcpy(
             RACE2 as *mut c_void,
